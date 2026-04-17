@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chattanooga Plant Share Directory</title>
+    <meta name="description"
+        content="A community-driven directory for sharing plants, seeds, and starts in Chattanooga.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <!-- PapaParse for parsing CSV data easily from Google Sheets -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <header role="banner" class="header">
+            <div class="header-content">
+                <h1>Chattanooga Plant Share</h1>
+                <p class="subtitle">A lightweight directory for sharing plants, seeds, and starts.</p>
+            </div>
+            <div class="header-actions">
+                <button id="theme-toggle" aria-label="Toggle Dark Mode">
+                    <svg class="sun-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="4" />
+                        <path d="M12 2v2" />
+                        <path d="M12 20v2" />
+                        <path d="m4.93 4.93 1.41 1.41" />
+                        <path d="m17.66 17.66 1.41 1.41" />
+                        <path d="M2 12h2" />
+                        <path d="M20 12h2" />
+                        <path d="m6.34 17.66-1.41 1.41" />
+                        <path d="m19.07 4.93-1.41 1.41" />
+                    </svg>
+                    <svg class="moon-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" style="display: none;">
+                        <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <main role="main" class="main-content">
+            <div class="controls">
+                <div class="search-container">
+                    <input type="text" id="search-input" placeholder="Search inventory..." aria-label="Search items">
+                </div>
+            </div>
+
+            <div id="loading" class="loading-state">
+                <div class="spinner"></div>
+                <p>Loading spreadsheet data...</p>
+            </div>
+
+            <div id="error-message" class="error-state" style="display: none;">
+                <p>Could not load spreadsheet data. Please try again later.</p>
+            </div>
+
+            <div id="data-grid" class="data-grid" aria-live="polite">
+                <!-- Cards will be populated here via JavaScript -->
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>Data synced from public <a
+                    href="https://docs.google.com/spreadsheets/d/1fnay67_hc7hU1BRAhbcfnQW5TQGReXGWpn0vIa_dkMY"
+                    target="_blank" rel="noopener">Google Sheet</a>.</p>
+        </footer>
+    </div>
+
+    <script type="module" src="main.js"></script>
+</body>
+
+</html>
