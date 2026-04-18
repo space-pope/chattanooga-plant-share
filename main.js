@@ -5,11 +5,13 @@
 const CONFIG = {
     // The public Google Sheet ID (from the URL)
     sheetId: '1fnay67_hc7hU1BRAhbcfnQW5TQGReXGWpn0vIa_dkMY',
-    
+
     // Which column acts as the main title for each card
     cardTitleColumn: 'Plant Name',
     // Which column acts as a subtitle/badge (can be null)
     cardSubtitleColumn: 'Seed, Start, or Wish-List',
+    // Type column
+    cardTypeColumn: 'Annual or Perennial',
 
     // Define specific formatting types for columns. Default is 'text'
     // Built-in types: 'text', 'email', 'url'
@@ -21,7 +23,8 @@ const CONFIG = {
     // Columns that shouldn't appear in the main body (usually because they are titles/subtitles)
     excludeFromBody: [
         'Plant Name',
-        'Seed, Start, or Wish-List'
+        'Seed, Start, or Wish-List',
+        'Annual or Perennial'
     ]
 };
 
@@ -60,6 +63,16 @@ async function fetchSheetData() {
             complete: (results) => {
                 // Filter out rows that have an empty title
                 rawData = results.data.filter(row => row[CONFIG.cardTitleColumn] && row[CONFIG.cardTitleColumn].trim() !== '');
+                
+                // Sort alphabetically by title
+                rawData.sort((a, b) => {
+                    const titleA = a[CONFIG.cardTitleColumn].toLowerCase();
+                    const titleB = b[CONFIG.cardTitleColumn].toLowerCase();
+                    if (titleA < titleB) return -1;
+                    if (titleA > titleB) return 1;
+                    return 0;
+                });
+                
                 resolve();
             },
             error: (err) => {
@@ -82,39 +95,78 @@ function renderData(data) {
 
     data.forEach(item => {
         const card = document.createElement('article');
-        card.className = 'card';
+        card.className = 'accordion-item';
 
-        // --- Card Header ---
-        const header = document.createElement('div');
-        header.className = 'card-header';
+        // --- Accordion Header ---
+        const header = document.createElement('button');
+        header.className = 'accordion-header';
+        header.setAttribute('aria-expanded', 'false');
+
+        // Container for info visible by default
+        const headerInfo = document.createElement('div');
+        headerInfo.className = 'accordion-header-info';
 
         const titleText = item[CONFIG.cardTitleColumn] || 'Unknown';
         const title = document.createElement('h2');
-        title.className = 'card-title';
+        title.className = 'accordion-title';
         title.textContent = titleText;
-        header.appendChild(title);
+        headerInfo.appendChild(title);
+        
+        const badgesContainer = document.createElement('div');
+        badgesContainer.className = 'accordion-badges';
+
+        if (CONFIG.cardTypeColumn && item[CONFIG.cardTypeColumn]) {
+            const typeText = item[CONFIG.cardTypeColumn];
+            if (typeText.trim() !== '') {
+                const typeBadge = document.createElement('span');
+                
+                const typeLower = typeText.toLowerCase();
+                let badgeModifier = '';
+                if (typeLower.includes('annual')) badgeModifier = 'badge-annual';
+                else if (typeLower.includes('perennial')) badgeModifier = 'badge-perennial';
+                
+                typeBadge.className = `badge badge-type ${badgeModifier}`.trim();
+                typeBadge.textContent = typeText;
+                badgesContainer.appendChild(typeBadge);
+            }
+        }
 
         if (CONFIG.cardSubtitleColumn && item[CONFIG.cardSubtitleColumn]) {
             const subtitleText = item[CONFIG.cardSubtitleColumn];
             if (subtitleText.trim() !== '') {
                 const subtitle = document.createElement('span');
-                subtitle.className = 'card-subtitle';
+                subtitle.className = 'badge badge-status';
                 subtitle.textContent = subtitleText;
-                header.appendChild(subtitle);
+                badgesContainer.appendChild(subtitle);
             }
         }
+        
+        headerInfo.appendChild(badgesContainer);
+        header.appendChild(headerInfo);
+
+        // Expand/Collapse Icon
+        const icon = document.createElement('div');
+        icon.className = 'accordion-icon';
+        icon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>`;
+        header.appendChild(icon);
+
         card.appendChild(header);
 
-        // --- Card Body ---
+        // --- Accordion Body ---
         const body = document.createElement('div');
-        body.className = 'card-body';
+        body.className = 'accordion-body';
+        
+        const bodyContent = document.createElement('div');
+        bodyContent.className = 'accordion-body-content';
 
+        let hasBodyData = false;
         for (const [key, value] of Object.entries(item)) {
             // Skip empty values or excluded columns
             if (!value || value.trim() === '' || CONFIG.excludeFromBody.includes(key)) {
                 continue;
             }
 
+            hasBodyData = true;
             const row = document.createElement('div');
             row.className = 'data-row';
 
@@ -125,16 +177,31 @@ function renderData(data) {
 
             const val = document.createElement('span');
             val.className = 'data-value';
-            
+
             // Format based on column type
             const type = CONFIG.columnTypes[key] || 'text';
             val.appendChild(formatValue(value, type));
 
             row.appendChild(val);
-            body.appendChild(row);
+            bodyContent.appendChild(row);
         }
 
+        if (!hasBodyData) {
+            const row = document.createElement('div');
+            row.className = 'data-row';
+            row.innerHTML = '<span class="data-value" style="color: var(--clr-text-muted);">No additional information</span>';
+            bodyContent.appendChild(row);
+        }
+
+        body.appendChild(bodyContent);
         card.appendChild(body);
+        
+        // Accordion Toggle Logic
+        header.addEventListener('click', () => {
+            const isExpanded = header.getAttribute('aria-expanded') === 'true';
+            header.setAttribute('aria-expanded', !isExpanded);
+        });
+
         fragment.appendChild(card);
     });
 
@@ -143,7 +210,7 @@ function renderData(data) {
 
 function formatValue(value, type) {
     const cleanValue = value.trim();
-    
+
     if (type === 'email') {
         // Basic check if it actually looks like an email to avoid formatting bare numbers
         if (cleanValue.includes('@')) {
@@ -164,7 +231,7 @@ function formatValue(value, type) {
         a.textContent = cleanValue;
         return a;
     }
-    
+
     // Default text fallback
     return document.createTextNode(cleanValue);
 }
@@ -172,14 +239,14 @@ function formatValue(value, type) {
 function setupSearch() {
     UI.searchInput.addEventListener('input', (e) => {
         const query = e.target.value.toLowerCase();
-        
+
         const filtered = rawData.filter(row => {
             // Check all values in the row for the search query
-            return Object.values(row).some(value => 
+            return Object.values(row).some(value =>
                 String(value).toLowerCase().includes(query)
             );
         });
-        
+
         renderData(filtered);
     });
 }
@@ -192,11 +259,11 @@ function showError() {
 function setupTheme() {
     const sunIcon = document.querySelector('.sun-icon');
     const moonIcon = document.querySelector('.moon-icon');
-    
+
     // Check local storage or system preference
     const savedTheme = localStorage.getItem('theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    
+
     if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
         document.documentElement.setAttribute('data-theme', 'dark');
         sunIcon.style.display = 'none';
