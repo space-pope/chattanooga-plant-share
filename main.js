@@ -31,7 +31,13 @@ const CONFIG = {
     columnsToIgnoreV1: ['image', 'Image', 'url', 'URL'],
 
     // Columns to ignore specifically in Version 2
-    columnsToIgnoreV2: []
+    columnsToIgnoreV2: [],
+
+    // Filters to create
+    filters: [
+        { column: 'Annual or Perennial', label: 'Lifespan' },
+        { column: 'Seed, Start, or Wish-List', label: 'Availability' }
+    ]
 };
 
 const UI = {
@@ -42,7 +48,8 @@ const UI = {
     searchInput: document.getElementById('search-input'),
     themeToggle: document.getElementById('theme-toggle'),
     tabBtns: document.querySelectorAll('.tab-btn'),
-    tabPanes: document.querySelectorAll('.tab-pane')
+    tabPanes: document.querySelectorAll('.tab-pane'),
+    filtersContainer: document.getElementById('filters-container')
 };
 
 let rawData = [];
@@ -52,6 +59,7 @@ async function init() {
     setupTabs();
     try {
         await fetchSheetData();
+        setupFilters(rawData);
         renderData(rawData);
         renderDataV2(rawData);
         setupSearch();
@@ -247,19 +255,88 @@ function formatValue(value, type) {
     return document.createTextNode(cleanValue);
 }
 
-function setupSearch() {
-    UI.searchInput.addEventListener('input', (e) => {
-        const query = e.target.value.toLowerCase();
+function applyFilters() {
+    const query = UI.searchInput.value.toLowerCase();
+    const dropdowns = document.querySelectorAll('.filter-dropdown');
+    
+    const activeFilters = [];
+    dropdowns.forEach(dd => {
+        if (dd.value !== '') {
+            activeFilters.push({ column: dd.dataset.column, value: dd.value });
+        }
+    });
 
-        const filtered = rawData.filter(row => {
-            // Check all values in the row for the search query
-            return Object.values(row).some(value =>
+    const filtered = rawData.filter(row => {
+        // Search match
+        let searchMatch = true;
+        if (query) {
+            searchMatch = Object.values(row).some(value => 
                 String(value).toLowerCase().includes(query)
             );
+        }
+
+        // Dropdown match
+        let dropdownMatch = true;
+        if (activeFilters.length > 0) {
+            dropdownMatch = activeFilters.every(f => {
+                const cellVal = row[f.column];
+                return cellVal && cellVal.trim() === f.value;
+            });
+        }
+
+        return searchMatch && dropdownMatch;
+    });
+
+    renderData(filtered);
+    renderDataV2(filtered);
+}
+
+function setupSearch() {
+    UI.searchInput.addEventListener('input', applyFilters);
+}
+
+function setupFilters(data) {
+    UI.filtersContainer.innerHTML = '';
+
+    CONFIG.filters.forEach(filterDef => {
+        const uniqueValues = new Set();
+        data.forEach(row => {
+            const val = row[filterDef.column];
+            if (val && val.trim() !== '') {
+                uniqueValues.add(val.trim());
+            }
         });
 
-        renderData(filtered);
-        renderDataV2(filtered);
+        const wrapper = document.createElement('div');
+        wrapper.className = 'filter-wrapper';
+
+        const label = document.createElement('label');
+        label.textContent = filterDef.label + ':';
+        const selectId = 'filter-' + filterDef.column.replace(/\s+/g, '-').toLowerCase();
+        label.setAttribute('for', selectId);
+
+        const select = document.createElement('select');
+        select.id = selectId;
+        select.className = 'filter-dropdown';
+        select.dataset.column = filterDef.column;
+
+        const defaultOpt = document.createElement('option');
+        defaultOpt.value = '';
+        defaultOpt.textContent = 'All';
+        select.appendChild(defaultOpt);
+
+        Array.from(uniqueValues).sort().forEach(val => {
+            const opt = document.createElement('option');
+            opt.value = val;
+            opt.textContent = val;
+            select.appendChild(opt);
+        });
+
+        select.addEventListener('change', applyFilters);
+
+        wrapper.appendChild(label);
+        wrapper.appendChild(select);
+        UI.filtersContainer.appendChild(wrapper);
     });
 }
 
@@ -268,10 +345,17 @@ function setupTabs() {
         btn.addEventListener('click', () => {
             UI.tabBtns.forEach(b => b.classList.remove('active'));
             UI.tabPanes.forEach(p => p.classList.remove('active'));
-
+            
             btn.classList.add('active');
             const target = btn.getAttribute('data-target');
             document.getElementById(`tab-${target}`).classList.add('active');
+            
+            // Show filters only on version 2
+            if (target === 'v2') {
+                UI.filtersContainer.style.display = 'flex';
+            } else {
+                UI.filtersContainer.style.display = 'none';
+            }
         });
     });
 }
