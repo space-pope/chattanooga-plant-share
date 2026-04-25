@@ -271,7 +271,7 @@ body {
     transition: grid-template-rows 0.3s ease;
 }
 
-.accordion-header[aria-expanded="true"] + .accordion-body {
+.accordion-header[aria-expanded="true"]+.accordion-body {
     grid-template-rows: 1fr;
     border-top: 1px solid var(--clr-border);
 }
@@ -284,7 +284,7 @@ body {
     padding: 0 1.25rem;
 }
 
-.accordion-header[aria-expanded="true"] + .accordion-body .accordion-body-content {
+.accordion-header[aria-expanded="true"]+.accordion-body .accordion-body-content {
     padding: 1.25rem;
 }
 
@@ -360,19 +360,182 @@ body {
     text-decoration: underline;
 }
 
+/* Tabs Navigation */
+.tabs-nav {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--clr-border);
+}
+
+.tab-btn {
+    background: transparent;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--clr-text-secondary);
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.tab-btn:hover {
+    color: var(--clr-text-primary);
+}
+
+.tab-btn.active {
+    color: var(--clr-brand-600);
+    border-bottom-color: var(--clr-brand-600);
+}
+
+[data-theme="dark"] .tab-btn.active {
+    color: var(--clr-brand-500);
+    border-bottom-color: var(--clr-brand-500);
+}
+
+.tab-pane {
+    display: none;
+}
+
+.tab-pane.active {
+    display: block;
+}
+
+/* V2 Specific Layouts */
+.v2-body-flex {
+    display: flex;
+    flex-direction: row;
+    gap: 1.5rem;
+    align-items: flex-start;
+}
+
 @media (max-width: 640px) {
-    .header {
+    .v2-body-flex {
         flex-direction: column;
-        gap: 1rem;
     }
-    
-    .accordion-header-info {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 0.5rem;
-    }
-    
-    .accordion-title {
-        min-width: 0;
-    }
+}
+
+.v2-image-container {
+    flex-shrink: 0;
+    width: 200px;
+}
+
+.v2-image-container img {
+    width: 100%;
+    height: auto;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--clr-border);
+    object-fit: cover;
+}
+
+.v2-data-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.v2-data-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1.25rem;
+}
+
+/* Nested Accordion */
+.nested-accordion {
+    margin-top: 1rem;
+    border: 1px solid var(--clr-border);
+    border-radius: 8px;
+    background: var(--clr-bg-main);
+}
+
+.nested-accordion-header {
+    width: 100%;
+    text-align: left;
+    padding: 0.75rem 1rem;
+    background: transparent;
+    border: none;
+    font-weight: 600;
+    color: var(--clr-text-primary);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.nested-accordion-header:hover {
+    background: var(--clr-border);
+}
+
+.nested-accordion-body {
+    display: none;
+    padding: 1rem;
+    border-top: 1px solid var(--clr-border);
+    overflow-x: auto;
+}
+
+.nested-accordion-body.open {
+    display: block;
+}
+
+/* Scraped Table Styles */
+.scraped-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+.scraped-table th,
+.scraped-table td {
+    padding: 0.75rem;
+    border: 1px solid var(--clr-border);
+    text-align: left;
+}
+
+.scraped-table th {
+    background-color: var(--clr-bg-surface);
+    color: var(--clr-text-secondary);
+    font-weight: 600;
+    width: 30%;
+}
+
+.scraped-table th.section-header {
+    width: 100%;
+    text-align: center;
+    background-color: var(--clr-brand-50);
+    color: var(--clr-brand-700);
+}
+
+[data-theme="dark"] .scraped-table th.section-header {
+    background-color: var(--clr-brand-700);
+    color: var(--clr-brand-50);
+}
+
+.scraped-table td {
+    color: var(--clr-text-primary);
+}
+
+.scraped-table a {
+    color: var(--clr-brand-600);
+    text-decoration: none;
+}
+
+.scraped-table a:hover {
+    text-decoration: underline;
+}
+
+.header {
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.accordion-header-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+}
+
+.accordion-title {
+    min-width: 0;
 }
