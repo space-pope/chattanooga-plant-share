@@ -258,7 +258,7 @@ function formatValue(value, type) {
 function applyFilters() {
     const query = UI.searchInput.value.toLowerCase();
     const dropdowns = document.querySelectorAll('.filter-dropdown');
-    
+
     const activeFilters = [];
     dropdowns.forEach(dd => {
         if (dd.value !== '') {
@@ -270,7 +270,7 @@ function applyFilters() {
         // Search match
         let searchMatch = true;
         if (query) {
-            searchMatch = Object.values(row).some(value => 
+            searchMatch = Object.values(row).some(value =>
                 String(value).toLowerCase().includes(query)
             );
         }
@@ -345,11 +345,11 @@ function setupTabs() {
         btn.addEventListener('click', () => {
             UI.tabBtns.forEach(b => b.classList.remove('active'));
             UI.tabPanes.forEach(p => p.classList.remove('active'));
-            
+
             btn.classList.add('active');
             const target = btn.getAttribute('data-target');
             document.getElementById(`tab-${target}`).classList.add('active');
-            
+
             // Show filters only on version 2
             if (target === 'v2') {
                 UI.filtersContainer.style.display = 'flex';
@@ -514,81 +514,80 @@ function renderDataV2(data) {
                     if (!isFetched) {
                         isFetched = true;
                         try {
-                            const fetchUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(urlCol.trim())}`;
+                            const urlStr = urlCol.trim();
+                            // Parse the slug from the URL (the last segment)
+                            const urlObj = new URL(urlStr);
+                            const pathParts = urlObj.pathname.replace(/\/$/, '').split('/');
+                            const slug = pathParts[pathParts.length - 1];
+
+                            if (!slug) {
+                                throw new Error('Could not parse slug from URL');
+                            }
+
+                            const fetchUrl = `./data/${slug}.json`;
                             const response = await fetch(fetchUrl);
-                            if (!response.ok) throw new Error('Network response was not ok');
+                            if (!response.ok) {
+                                if (response.status === 404) {
+                                    throw new Error('Data not yet compiled for this plant.');
+                                }
+                                throw new Error('Network response was not ok');
+                            }
 
                             const json = await response.json();
+                            const plantData = json.data;
 
-                            const parser = new DOMParser();
-                            const doc = parser.parseFromString(json.contents, 'text/html');
-
-                            const table = doc.querySelector('table');
-
-                            if (table) {
+                            if (plantData && Object.keys(plantData).length > 0) {
                                 const newTable = document.createElement('table');
                                 newTable.className = 'scraped-table';
 
-                                const rows = table.querySelectorAll('tr');
-                                rows.forEach(r => {
-                                    const newRow = document.createElement('tr');
-                                    const ths = r.querySelectorAll('th');
-                                    const tds = r.querySelectorAll('td');
+                                // Optional: add scientific name as header if it exists
+                                if (json.scientific_name) {
+                                    const headerRow = document.createElement('tr');
+                                    const headerTh = document.createElement('th');
+                                    headerTh.colSpan = 2;
+                                    headerTh.className = 'section-header';
+                                    headerTh.textContent = json.scientific_name;
+                                    headerRow.appendChild(headerTh);
+                                    newTable.appendChild(headerRow);
+                                }
 
-                                    if (ths.length === 1 && tds.length === 0) {
-                                        const newTh = document.createElement('th');
-                                        newTh.colSpan = 2;
-                                        newTh.className = 'section-header';
-                                        newTh.textContent = ths[0].textContent.trim();
-                                        newRow.appendChild(newTh);
+                                for (const [key, val] of Object.entries(plantData)) {
+                                    const row = document.createElement('tr');
+
+                                    const th = document.createElement('th');
+                                    th.textContent = key;
+                                    row.appendChild(th);
+
+                                    const td = document.createElement('td');
+                                    // Make links clickable if they start with http
+                                    if (val.startsWith('http://') || val.startsWith('https://')) {
+                                        const aTag = document.createElement('a');
+                                        aTag.href = val;
+                                        aTag.textContent = val;
+                                        aTag.target = '_blank';
+                                        aTag.rel = 'noopener noreferrer';
+                                        td.appendChild(aTag);
                                     } else {
-                                        ths.forEach(th => {
-                                            const newTh = document.createElement('th');
-                                            newTh.textContent = th.textContent.trim();
-                                            newRow.appendChild(newTh);
-                                        });
-
-                                        tds.forEach(td => {
-                                            const newTd = document.createElement('td');
-                                            const aTag = td.querySelector('a');
-                                            
-                                            // Only create a link if the cell's entire text content matches the link's text content
-                                            if (aTag && aTag.textContent.trim() === td.textContent.trim()) {
-                                                const newA = document.createElement('a');
-                                                newA.href = aTag.href;
-                                                newA.textContent = aTag.textContent.trim();
-                                                newA.target = '_blank';
-                                                newA.rel = 'noopener noreferrer';
-                                                newTd.appendChild(newA);
-                                            } else if (aTag) {
-                                                let textBefore = '';
-                                                for (const node of td.childNodes) {
-                                                    if (node === aTag) break;
-                                                    textBefore += node.textContent || '';
-                                                }
-                                                newTd.textContent = textBefore.trim();
-                                            } else {
-                                                newTd.textContent = td.textContent.trim();
-                                            }
-                                            newRow.appendChild(newTd);
-                                        });
+                                        td.textContent = val;
                                     }
+                                    row.appendChild(td);
 
-                                    newTable.appendChild(newRow);
-                                });
+                                    newTable.appendChild(row);
+                                }
 
                                 const urlRow = document.createElement('tr');
-                                urlRow.innerHTML = `<th>URL</th><td><a href="${urlCol.trim()}" target="_blank" rel="noopener noreferrer">${urlCol.trim()}</a></td>`;
+                                urlRow.innerHTML = `<th>URL</th><td><a href="${urlStr}" target="_blank" rel="noopener noreferrer">${urlStr}</a></td>`;
                                 newTable.appendChild(urlRow);
 
                                 nestedBody.innerHTML = '';
                                 nestedBody.appendChild(newTable);
                             } else {
-                                nestedBody.innerHTML = '<p style="color: var(--clr-text-muted); font-size: 0.875rem;">No table data found at this URL.</p>';
+                                nestedBody.innerHTML = '<p style="color: var(--clr-text-muted); font-size: 0.875rem;">No detailed data found for this plant.</p>';
                             }
                         } catch (err) {
-                            console.error('Error fetching URL:', err);
-                            nestedBody.innerHTML = '<p style="color: var(--clr-brand-700); font-size: 0.875rem;">Failed to load data. The URL might be invalid or unreachable.</p>';
+                            console.error('Error fetching plant data:', err);
+                            const errorMessage = err.message === 'Data not yet compiled for this plant.' ? err.message : 'Failed to load data. It may not be available yet.';
+                            nestedBody.innerHTML = `<p style="color: var(--clr-brand-700); font-size: 0.875rem;">${errorMessage}</p>`;
                         }
                     }
                 }
