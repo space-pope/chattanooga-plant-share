@@ -1,0 +1,16 @@
+{
+  "name": "chatt-plant-share",
+  "version": "0.1.0",
+  "description": "Setup code for the Chattanooga Plant Share directory.",
+  "scripts": {
+    "build:data": "tsx build_data.ts"
+  },
+  "dependencies": {
+    "csv-parse": "^5.5.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.7.2",
+    "typescript": "^5.0.0"
+  }
+}
